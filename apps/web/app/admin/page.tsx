@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
+import { AdminLivePanel } from "@/components/organisms/AdminLivePanel";
 import { Badge } from "@/components/atoms/Badge";
 import { Icon } from "@/components/atoms/Icon";
 
@@ -75,9 +76,11 @@ export default function AdminPage() {
             ))}
           </div>
 
+          <AdminLivePanel />
+
           <div className="mt-8 grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
             <section className="rounded-[2rem] border border-white/10 bg-white/5 p-6" aria-labelledby="admin-messages-title">
-              <h3 id="admin-messages-title" className="text-2xl font-semibold">Messages du site</h3>
+              <h3 id="admin-messages-title" className="text-2xl font-semibold">Messages du site — maquette métier</h3>
               <div className="mt-5 grid gap-4">
                 {messages.map((message) => (
                   <article key={message.id} className="rounded-2xl bg-white p-5 text-slate-900">
@@ -101,7 +104,7 @@ export default function AdminPage() {
             </section>
 
             <aside className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
-              <h3 className="text-2xl font-semibold">Modules admin prévus</h3>
+              <h3 className="text-2xl font-semibold">Modules back-office prévus</h3>
               <div className="mt-5 grid gap-3">
                 {["Gestion des messages", "Gestion des utilisateurs", "Qualification CRM", "Documents et livrables", "Paramètres SEO", "Journaux d’activité", "Export CSV/XLSX", "Notifications e-mail"].map((module) => (
                   <div key={module} className="flex items-center gap-3 rounded-2xl bg-white/10 p-4">
