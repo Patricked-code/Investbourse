@@ -25,7 +25,7 @@ export default function LoginPage() {
             <div className="mt-8 grid gap-3 text-sm text-slate-600">
               <p className="flex items-center gap-2"><Icon name="check" className="h-5 w-5 text-emerald-600" /> Connexion Google, Facebook et Microsoft prévue via OAuth.</p>
               <p className="flex items-center gap-2"><Icon name="check" className="h-5 w-5 text-emerald-600" /> Connexion e-mail et mot de passe avec vérification sécurisée.</p>
-              <p className="flex items-center gap-2"><Icon name="check" className="h-5 w-5 text-emerald-600" /> Mot de passe oublié avec lien de réinitialisation.</p>
+              <p className="flex items-center gap-2"><Icon name="check" className="h-5 w-5 text-emerald-600" /> Réinitialisation d’accès via lien sécurisé.</p>
             </div>
           </section>
 
@@ -41,7 +41,7 @@ export default function LoginPage() {
               <label className="grid gap-2 text-sm font-medium text-slate-700">Email<input name="email" type="email" required className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100" placeholder="nom@institution.com" /></label>
               <label className="grid gap-2 text-sm font-medium text-slate-700">Mot de passe<input name="password" type="password" required className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100" placeholder="••••••••" /></label>
               <button type="submit" className="rounded-full bg-slate-950 px-6 py-4 text-sm font-semibold text-white hover:bg-emerald-700">Accéder à mon espace</button>
-              <Link href="/auth/forgot-password" className="text-sm font-semibold text-emerald-700">Mot de passe oublié ?</Link>
+              <Link href="/compte/recuperation" className="text-sm font-semibold text-emerald-700">Accès oublié ?</Link>
               <Link href="/auth/register" className="text-sm font-semibold text-slate-700">Créer un compte institutionnel</Link>
             </form>
             <p className="mt-5 text-xs leading-6 text-slate-500">En production : Auth.js/NextAuth, OAuth Google/Facebook/Microsoft, hash de mot de passe, double facteur optionnel et journaux de connexion.</p>
