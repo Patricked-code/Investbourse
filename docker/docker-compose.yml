@@ -27,11 +27,19 @@ services:
     restart: unless-stopped
     env_file:
       - ../.env.example
+    environment:
+      PORT: 4000
     ports:
       - "4000:4000"
     depends_on:
       postgres:
         condition: service_healthy
+      contact-service:
+        condition: service_started
+      content-service:
+        condition: service_started
+      office-service:
+        condition: service_started
 
   contact-service:
     build:
@@ -43,6 +51,8 @@ services:
     restart: unless-stopped
     env_file:
       - ../.env.example
+    environment:
+      PORT: 4010
     ports:
       - "4010:4010"
     depends_on:
@@ -59,8 +69,28 @@ services:
     restart: unless-stopped
     env_file:
       - ../.env.example
+    environment:
+      PORT: 4020
     ports:
       - "4020:4020"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  office-service:
+    build:
+      context: ..
+      dockerfile: docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: services/office-service
+    container_name: investbourse-office-service
+    restart: unless-stopped
+    env_file:
+      - ../.env.example
+    environment:
+      PORT: 4040
+    ports:
+      - "4040:4040"
     depends_on:
       postgres:
         condition: service_healthy
