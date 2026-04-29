@@ -1,0 +1,28 @@
+{
+  "name": "investbourse-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Investbourse — plateforme de conseil en investissements boursiers institutionnels UEMOA, full REST API et architecture microservices.",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "pnpm --filter @investbourse/web dev",
+    "build": "pnpm --filter @investbourse/web build",
+    "start": "pnpm --filter @investbourse/web start",
+    "lint": "pnpm --filter @investbourse/web lint",
+    "typecheck": "pnpm --filter @investbourse/web typecheck",
+    "dev:gateway": "pnpm --filter @investbourse/api-gateway dev",
+    "dev:auth": "pnpm --filter @investbourse/auth-service dev",
+    "dev:contact": "pnpm --filter @investbourse/contact-service dev",
+    "dev:content": "pnpm --filter @investbourse/content-service dev",
+    "dev:admin": "pnpm --filter @investbourse/admin-service dev"
+  },
+  "keywords": [
+    "uemoa",
+    "conseil-investissement",
+    "opcvm",
+    "seo",
+    "microservices",
+    "rest-api"
+  ],
+  "license": "UNLICENSED"
+}
