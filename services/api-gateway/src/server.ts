@@ -19,20 +19,29 @@ const contactRequestSchema = z.object({
   message: z.string().min(10),
 });
 
-async function forwardJson<T>(url: string, body: unknown): Promise<T> {
+const officeMessageSchema = z.object({
+  contactRequestId: z.string().min(1),
+  status: z.enum(["OPEN", "REVIEW", "ANSWERED", "ARCHIVED"]),
+  priority: z.enum(["LOW", "NORMAL", "HIGH"]).default("NORMAL"),
+  assignedTo: z.string().optional().nullable(),
+  note: z.string().optional().nullable(),
+});
+
+async function forwardPost<T>(url: string, body: unknown): Promise<{ status: number; payload: T }> {
   const response = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
   });
 
-  const payload = await response.json();
+  const payload = (await response.json()) as T;
+  return { status: response.status, payload };
+}
 
-  if (!response.ok) {
-    throw new Error(JSON.stringify(payload));
-  }
-
-  return payload as T;
+async function forwardGet<T>(url: string): Promise<{ status: number; payload: T }> {
+  const response = await fetch(url);
+  const payload = (await response.json()) as T;
+  return { status: response.status, payload };
 }
 
 server.get("/health", async () => ({
@@ -43,7 +52,7 @@ server.get("/health", async () => ({
     contact: env.CONTACT_SERVICE_URL,
     content: env.CONTENT_SERVICE_URL,
     auth: env.AUTH_SERVICE_URL,
-    admin: env.ADMIN_SERVICE_URL,
+    office: env.OFFICE_SERVICE_URL,
   },
   timestamp: new Date().toISOString(),
 }));
@@ -56,8 +65,8 @@ server.post("/api/contact-requests", async (request, reply) => {
   }
 
   try {
-    const payload = await forwardJson(`${env.CONTACT_SERVICE_URL}/contact-requests`, parsed.data);
-    return reply.status(201).send(payload);
+    const { status, payload } = await forwardPost(`${env.CONTACT_SERVICE_URL}/contact-requests`, parsed.data);
+    return reply.status(status).send(payload);
   } catch (error) {
     request.log.error(error);
     return reply.status(502).send({ ok: false, error: "CONTACT_SERVICE_UNAVAILABLE" });
@@ -66,12 +75,47 @@ server.post("/api/contact-requests", async (request, reply) => {
 
 server.get("/api/seo-pages", async (_request, reply) => {
   try {
-    const response = await fetch(`${env.CONTENT_SERVICE_URL}/seo-pages`);
-    const payload = await response.json();
-    return reply.status(response.status).send(payload);
+    const { status, payload } = await forwardGet(`${env.CONTENT_SERVICE_URL}/seo-pages`);
+    return reply.status(status).send(payload);
   } catch (error) {
     server.log.error(error);
     return reply.status(502).send({ ok: false, error: "CONTENT_SERVICE_UNAVAILABLE" });
+  }
+});
+
+server.get("/api/office/dashboard", async (_request, reply) => {
+  try {
+    const { status, payload } = await forwardGet(`${env.OFFICE_SERVICE_URL}/office/dashboard`);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    server.log.error(error);
+    return reply.status(502).send({ ok: false, error: "OFFICE_SERVICE_UNAVAILABLE" });
+  }
+});
+
+server.get("/api/office/messages", async (_request, reply) => {
+  try {
+    const { status, payload } = await forwardGet(`${env.OFFICE_SERVICE_URL}/office/messages`);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    server.log.error(error);
+    return reply.status(502).send({ ok: false, error: "OFFICE_SERVICE_UNAVAILABLE" });
+  }
+});
+
+server.post("/api/office/messages", async (request, reply) => {
+  const parsed = officeMessageSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
+  }
+
+  try {
+    const { status, payload } = await forwardPost(`${env.OFFICE_SERVICE_URL}/office/messages`, parsed.data);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(502).send({ ok: false, error: "OFFICE_SERVICE_UNAVAILABLE" });
   }
 });
 
