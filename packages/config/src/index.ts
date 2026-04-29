@@ -12,6 +12,7 @@ export const serviceEnvSchema = z.object({
   CONTENT_SERVICE_URL: z.string().url().default("http://localhost:4020"),
   AUTH_SERVICE_URL: z.string().url().default("http://localhost:4030"),
   ADMIN_SERVICE_URL: z.string().url().default("http://localhost:4040"),
+  OFFICE_SERVICE_URL: z.string().url().default("http://localhost:4040"),
 });
 
 export type ServiceEnv = z.infer<typeof serviceEnvSchema>;
