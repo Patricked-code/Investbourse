@@ -1,0 +1,69 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: investbourse-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: investbourse
+      POSTGRES_PASSWORD: investbourse_password
+      POSTGRES_DB: investbourse
+    ports:
+      - "5432:5432"
+    volumes:
+      - investbourse_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U investbourse -d investbourse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: services/api-gateway
+    container_name: investbourse-api-gateway
+    restart: unless-stopped
+    env_file:
+      - ../.env.example
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  contact-service:
+    build:
+      context: ..
+      dockerfile: docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: services/contact-service
+    container_name: investbourse-contact-service
+    restart: unless-stopped
+    env_file:
+      - ../.env.example
+    ports:
+      - "4010:4010"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  content-service:
+    build:
+      context: ..
+      dockerfile: docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: services/content-service
+    container_name: investbourse-content-service
+    restart: unless-stopped
+    env_file:
+      - ../.env.example
+    ports:
+      - "4020:4020"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  investbourse_postgres_data:
