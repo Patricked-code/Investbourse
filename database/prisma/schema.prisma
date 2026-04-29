@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPERADMIN
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  DISABLED
+}
+
+enum ContactRequestStatus {
+  NEW
+  QUALIFIED
+  IN_PROGRESS
+  CLOSED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  fullName     String
+  organization String?
+  email        String     @unique
+  passwordHash String?
+  role         UserRole   @default(USER)
+  status       UserStatus @default(PENDING_VERIFICATION)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  assignedContactRequests ContactRequest[] @relation("AssignedContactRequests")
+  auditLogs               AuditLog[]
+}
+
+model ContactRequest {
+  id               String               @id @default(cuid())
+  fullName         String
+  organization     String
+  email            String
+  requestType      String
+  message          String
+  status           ContactRequestStatus @default(NEW)
+  assignedToUserId String?
+  assignedTo       User?                @relation("AssignedContactRequests", fields: [assignedToUserId], references: [id])
+  adminNotes       AdminNote[]
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+}
+
+model SeoPage {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  metaTitle   String
+  description String
+  schemaType  String
+  h1          String
+  h2          String
+  h3          String
+  h4          String
+  h5          String
+  keywords    String[]
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AdminNote {
+  id               String         @id @default(cuid())
+  contactRequestId String
+  contactRequest   ContactRequest @relation(fields: [contactRequestId], references: [id], onDelete: Cascade)
+  body             String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  actor       User?    @relation(fields: [actorUserId], references: [id])
+  action      String
+  entityType  String
+  entityId    String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+}
