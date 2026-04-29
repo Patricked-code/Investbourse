@@ -11,6 +11,9 @@
   },
   "dependencies": {
     "@fastify/cors": "10.0.1",
+    "@investbourse/config": "workspace:*",
+    "@investbourse/types": "workspace:*",
+    "@investbourse/validators": "workspace:*",
     "fastify": "5.2.1",
     "zod": "3.24.2"
   },
