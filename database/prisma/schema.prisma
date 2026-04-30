@@ -26,6 +26,19 @@ enum ContactRequestStatus {
   CLOSED
 }
 
+enum OfficeMessageStatus {
+  OPEN
+  REVIEW
+  ANSWERED
+  ARCHIVED
+}
+
+enum OfficePriority {
+  LOW
+  NORMAL
+  HIGH
+}
+
 model User {
   id           String     @id @default(cuid())
   fullName     String
@@ -38,6 +51,7 @@ model User {
   updatedAt    DateTime   @updatedAt
 
   assignedContactRequests ContactRequest[] @relation("AssignedContactRequests")
+  assignedOfficeMessages  OfficeMessage[]  @relation("AssignedOfficeMessages")
   auditLogs               AuditLog[]
 }
 
@@ -52,8 +66,23 @@ model ContactRequest {
   assignedToUserId String?
   assignedTo       User?                @relation("AssignedContactRequests", fields: [assignedToUserId], references: [id])
   adminNotes       AdminNote[]
+  officeMessages   OfficeMessage[]
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
+}
+
+model OfficeMessage {
+  id               String              @id @default(cuid())
+  contactRequestId String
+  contactRequest   ContactRequest      @relation(fields: [contactRequestId], references: [id], onDelete: Cascade)
+  status           OfficeMessageStatus @default(OPEN)
+  priority         OfficePriority      @default(NORMAL)
+  assignedToUserId String?
+  assignedTo       User?               @relation("AssignedOfficeMessages", fields: [assignedToUserId], references: [id])
+  assignedToLabel  String?
+  note             String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 }
 
 model SeoPage {
