@@ -21,6 +21,12 @@ export function loadServiceEnv(overrides: NodeJS.ProcessEnv = process.env): Serv
   return serviceEnvSchema.parse(overrides);
 }
 
+export const sessionConfig = {
+  cookieName: "investbourse_session",
+  localBypassCookieName: "investbourse_admin_bypass",
+  maxAgeSeconds: 60 * 60 * 8,
+};
+
 export const publicSiteConfig = {
   name: "Investbourse",
   areaServed: "UEMOA",
