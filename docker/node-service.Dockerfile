@@ -12,6 +12,7 @@ COPY packages ./packages
 COPY database ./database
 
 RUN pnpm install --no-frozen-lockfile
+RUN pnpm --filter @investbourse/database db:generate
 RUN pnpm --filter "./${SERVICE_PATH}" build
 
 CMD pnpm --filter "./${SERVICE_PATH}" start
