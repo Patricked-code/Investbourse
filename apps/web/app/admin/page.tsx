@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { AdminLivePanel } from "@/components/organisms/AdminLivePanel";
 import { ContactRequestsLivePanel } from "@/components/organisms/ContactRequestsLivePanel";
+import { LogoutButton } from "@/components/molecules/LogoutButton";
 import { Badge } from "@/components/atoms/Badge";
 import { Icon } from "@/components/atoms/Icon";
+import { canAccessAdmin, getCurrentSession } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "Cockpit administrateur | Investbourse",
@@ -19,7 +22,17 @@ const adminStats = [
   ["SEO", "Content service", "users"],
 ];
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  const session = await getCurrentSession();
+
+  if (!session) {
+    redirect("/auth/login?redirect=/admin");
+  }
+
+  if (!canAccessAdmin(session.user.role)) {
+    redirect("/espace-institutionnel");
+  }
+
   return (
     <>
       <Header />
@@ -30,8 +43,12 @@ export default function AdminPage() {
               <Badge>Cockpit administrateur</Badge>
               <h1 className="mt-5 text-4xl font-semibold md:text-6xl">Administration des messages et demandes entrantes</h1>
               <h2 className="mt-4 text-xl font-semibold text-emerald-100">Réception, qualification, suivi commercial, SEO et conformité</h2>
+              <p className="mt-4 text-sm text-slate-300">Connecté : {session.user.fullName} · {session.user.email} · rôle {session.user.role}</p>
             </div>
-            <button className="rounded-full bg-emerald-400 px-6 py-3 text-sm font-semibold text-slate-950">Exporter les messages</button>
+            <div className="flex flex-wrap gap-3">
+              <button className="rounded-full bg-emerald-400 px-6 py-3 text-sm font-semibold text-slate-950">Exporter les messages</button>
+              <LogoutButton />
+            </div>
           </div>
 
           <div className="mt-10 grid gap-5 md:grid-cols-4">
