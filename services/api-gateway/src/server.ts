@@ -28,6 +28,19 @@ const officeMessageSchema = z.object({
   note: z.string().optional().nullable(),
 });
 
+const missionDocumentSchema = z.object({
+  title: z.string().trim().min(2).max(220),
+  description: z.string().trim().max(2000).optional().nullable(),
+  fileName: z.string().trim().min(2).max(260),
+  fileUrl: z.string().trim().min(2).max(2000),
+  category: z.enum(["NOTE_CADRAGE", "RAPPORT_ANALYSE", "GRILLE_SCORING", "CAHIER_CHARGES", "CONTRAT", "LIVRABLE", "AUTRE"]).default("AUTRE"),
+  visibility: z.enum(["INTERNAL_ONLY", "CLIENT_VISIBLE"]).default("INTERNAL_ONLY"),
+  contactRequestId: z.string().trim().optional().nullable(),
+  userId: z.string().trim().optional().nullable(),
+  uploadedByLabel: z.string().trim().max(160).optional().nullable(),
+  actorUserId: z.string().trim().optional().nullable(),
+});
+
 const sessionValidationSchema = z.object({ token: z.string().min(10) });
 const userAdminUpdateSchema = z.object({
   role: z.enum(["USER", "ADMIN", "SUPERADMIN"]).optional(),
@@ -63,6 +76,17 @@ async function forwardGet<T>(url: string): Promise<{ status: number; payload: T 
   return { status: response.status, payload };
 }
 
+async function checkService(name: string, url: string) {
+  const startedAt = Date.now();
+  try {
+    const response = await fetch(`${url}/health`);
+    const payload = await response.json();
+    return { name, ok: response.ok, status: response.status, latencyMs: Date.now() - startedAt, payload };
+  } catch (error) {
+    return { name, ok: false, status: 0, latencyMs: Date.now() - startedAt, error: error instanceof Error ? error.message : "UNKNOWN_ERROR" };
+  }
+}
+
 server.get("/health", async () => ({
   status: "ok",
   service: "api-gateway",
@@ -76,9 +100,25 @@ server.get("/health", async () => ({
   timestamp: new Date().toISOString(),
 }));
 
+server.get("/api/system/health", async () => {
+  const checks = await Promise.all([
+    checkService("contact-service", env.CONTACT_SERVICE_URL),
+    checkService("content-service", env.CONTENT_SERVICE_URL),
+    checkService("auth-service", env.AUTH_SERVICE_URL),
+    checkService("office-service", env.OFFICE_SERVICE_URL),
+  ]);
+
+  return {
+    ok: checks.every((check) => check.ok),
+    data: {
+      gateway: { status: "ok", timestamp: new Date().toISOString() },
+      checks,
+    },
+  };
+});
+
 server.post("/api/auth/register", async (request, reply) => {
   const parsed = userRegistrationInputSchema.safeParse(request.body);
-
   if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
 
   try {
@@ -92,7 +132,6 @@ server.post("/api/auth/register", async (request, reply) => {
 
 server.post("/api/auth/login", async (request, reply) => {
   const parsed = userLoginInputSchema.safeParse(request.body);
-
   if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
 
   try {
@@ -106,7 +145,6 @@ server.post("/api/auth/login", async (request, reply) => {
 
 server.post("/api/auth/session", async (request, reply) => {
   const parsed = sessionValidationSchema.safeParse(request.body);
-
   if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
 
   try {
@@ -142,7 +180,6 @@ server.get("/api/auth/users/:id", async (request, reply) => {
 server.patch("/api/auth/users/:id", async (request, reply) => {
   const { id } = request.params as { id: string };
   const parsed = userAdminUpdateSchema.safeParse(request.body);
-
   if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
 
   try {
@@ -177,7 +214,6 @@ server.get("/api/contact-requests/:id", async (request, reply) => {
 
 server.post("/api/contact-requests", async (request, reply) => {
   const parsed = contactRequestSchema.safeParse(request.body);
-
   if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
 
   try {
@@ -201,7 +237,6 @@ server.get("/api/seo-pages", async (_request, reply) => {
 
 server.post("/api/seo-pages", async (request, reply) => {
   const parsed = seoPageInputSchema.safeParse(request.body);
-
   if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
 
   try {
@@ -265,9 +300,53 @@ server.get("/api/office/audit/by-contact-request/:contactRequestId", async (requ
   }
 });
 
+server.get("/api/office/documents", async (_request, reply) => {
+  try {
+    const { status, payload } = await forwardGet(`${env.OFFICE_SERVICE_URL}/office/documents`);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    server.log.error(error);
+    return reply.status(502).send({ ok: false, error: "OFFICE_SERVICE_UNAVAILABLE" });
+  }
+});
+
+server.get("/api/office/documents/by-user/:userId", async (request, reply) => {
+  const { userId } = request.params as { userId: string };
+  try {
+    const { status, payload } = await forwardGet(`${env.OFFICE_SERVICE_URL}/office/documents/by-user/${userId}`);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(502).send({ ok: false, error: "OFFICE_SERVICE_UNAVAILABLE" });
+  }
+});
+
+server.get("/api/office/documents/by-contact-request/:contactRequestId", async (request, reply) => {
+  const { contactRequestId } = request.params as { contactRequestId: string };
+  try {
+    const { status, payload } = await forwardGet(`${env.OFFICE_SERVICE_URL}/office/documents/by-contact-request/${contactRequestId}`);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(502).send({ ok: false, error: "OFFICE_SERVICE_UNAVAILABLE" });
+  }
+});
+
+server.post("/api/office/documents", async (request, reply) => {
+  const parsed = missionDocumentSchema.safeParse(request.body);
+  if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
+
+  try {
+    const { status, payload } = await forwardPost(`${env.OFFICE_SERVICE_URL}/office/documents`, parsed.data);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(502).send({ ok: false, error: "OFFICE_SERVICE_UNAVAILABLE" });
+  }
+});
+
 server.post("/api/office/messages", async (request, reply) => {
   const parsed = officeMessageSchema.safeParse(request.body);
-
   if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
 
   try {
