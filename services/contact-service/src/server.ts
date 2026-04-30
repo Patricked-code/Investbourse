@@ -2,7 +2,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { loadServiceEnv } from "@investbourse/config";
 import { contactRequestInputSchema } from "@investbourse/validators";
-import type { ContactRequest } from "@investbourse/types";
+import { createContactRequest, getContactRequestById, listContactRequests } from "./repositories/contact-request.repository.js";
 
 const env = loadServiceEnv({ ...process.env, PORT: process.env.PORT ?? "4010" });
 const server = Fastify({ logger: true });
@@ -12,19 +12,22 @@ await server.register(cors, {
   credentials: true,
 });
 
-const contactRequests = new Map<string, ContactRequest>();
-
 server.get("/health", async () => ({
   status: "ok",
   service: "contact-service",
-  persistence: "memory-temporary",
+  persistence: "postgres-prisma",
   timestamp: new Date().toISOString(),
 }));
 
-server.get("/contact-requests", async () => ({
-  ok: true,
-  data: Array.from(contactRequests.values()).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-}));
+server.get("/contact-requests", async (_request, reply) => {
+  try {
+    const data = await listContactRequests();
+    return { ok: true, data };
+  } catch (error) {
+    server.log.error(error);
+    return reply.status(500).send({ ok: false, error: "CONTACT_REQUEST_LIST_FAILED" });
+  }
+});
 
 server.post("/contact-requests", async (request, reply) => {
   const parsed = contactRequestInputSchema.safeParse(request.body);
@@ -33,28 +36,30 @@ server.post("/contact-requests", async (request, reply) => {
     return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
   }
 
-  const item: ContactRequest = {
-    id: `REQ-${Date.now()}`,
-    status: "NEW",
-    assignedToUserId: null,
-    createdAt: new Date().toISOString(),
-    ...parsed.data,
-  };
-
-  contactRequests.set(item.id, item);
-
-  return reply.status(201).send({ ok: true, data: item });
+  try {
+    const item = await createContactRequest(parsed.data);
+    return reply.status(201).send({ ok: true, data: item });
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(500).send({ ok: false, error: "CONTACT_REQUEST_CREATE_FAILED" });
+  }
 });
 
 server.get("/contact-requests/:id", async (request, reply) => {
   const { id } = request.params as { id: string };
-  const item = contactRequests.get(id);
 
-  if (!item) {
-    return reply.status(404).send({ ok: false, error: "CONTACT_REQUEST_NOT_FOUND" });
+  try {
+    const item = await getContactRequestById(id);
+
+    if (!item) {
+      return reply.status(404).send({ ok: false, error: "CONTACT_REQUEST_NOT_FOUND" });
+    }
+
+    return { ok: true, data: item };
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(500).send({ ok: false, error: "CONTACT_REQUEST_READ_FAILED" });
   }
-
-  return { ok: true, data: item };
 });
 
 try {
