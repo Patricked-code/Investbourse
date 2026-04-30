@@ -2,7 +2,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { z } from "zod";
 import { loadServiceEnv } from "@investbourse/config";
-import { userLoginInputSchema, userRegistrationInputSchema } from "@investbourse/validators";
+import { userLoginInputSchema, userRegistrationInputSchema, seoPageInputSchema } from "@investbourse/validators";
 
 const env = loadServiceEnv();
 const server = Fastify({ logger: true });
@@ -79,9 +79,7 @@ server.get("/health", async () => ({
 server.post("/api/auth/register", async (request, reply) => {
   const parsed = userRegistrationInputSchema.safeParse(request.body);
 
-  if (!parsed.success) {
-    return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
-  }
+  if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
 
   try {
     const { status, payload } = await forwardPost(`${env.AUTH_SERVICE_URL}/auth/register`, parsed.data);
@@ -95,9 +93,7 @@ server.post("/api/auth/register", async (request, reply) => {
 server.post("/api/auth/login", async (request, reply) => {
   const parsed = userLoginInputSchema.safeParse(request.body);
 
-  if (!parsed.success) {
-    return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
-  }
+  if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
 
   try {
     const { status, payload } = await forwardPost(`${env.AUTH_SERVICE_URL}/auth/login`, parsed.data);
@@ -111,9 +107,7 @@ server.post("/api/auth/login", async (request, reply) => {
 server.post("/api/auth/session", async (request, reply) => {
   const parsed = sessionValidationSchema.safeParse(request.body);
 
-  if (!parsed.success) {
-    return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
-  }
+  if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
 
   try {
     const { status, payload } = await forwardPost(`${env.AUTH_SERVICE_URL}/auth/session`, parsed.data);
@@ -136,7 +130,6 @@ server.get("/api/auth/users", async (_request, reply) => {
 
 server.get("/api/auth/users/:id", async (request, reply) => {
   const { id } = request.params as { id: string };
-
   try {
     const { status, payload } = await forwardGet(`${env.AUTH_SERVICE_URL}/auth/users/${id}`);
     return reply.status(status).send(payload);
@@ -150,9 +143,7 @@ server.patch("/api/auth/users/:id", async (request, reply) => {
   const { id } = request.params as { id: string };
   const parsed = userAdminUpdateSchema.safeParse(request.body);
 
-  if (!parsed.success) {
-    return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
-  }
+  if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
 
   try {
     const { status, payload } = await forwardPatch(`${env.AUTH_SERVICE_URL}/auth/users/${id}`, parsed.data);
@@ -175,7 +166,6 @@ server.get("/api/contact-requests", async (_request, reply) => {
 
 server.get("/api/contact-requests/:id", async (request, reply) => {
   const { id } = request.params as { id: string };
-
   try {
     const { status, payload } = await forwardGet(`${env.CONTACT_SERVICE_URL}/contact-requests/${id}`);
     return reply.status(status).send(payload);
@@ -188,9 +178,7 @@ server.get("/api/contact-requests/:id", async (request, reply) => {
 server.post("/api/contact-requests", async (request, reply) => {
   const parsed = contactRequestSchema.safeParse(request.body);
 
-  if (!parsed.success) {
-    return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
-  }
+  if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
 
   try {
     const { status, payload } = await forwardPost(`${env.CONTACT_SERVICE_URL}/contact-requests`, parsed.data);
@@ -207,6 +195,20 @@ server.get("/api/seo-pages", async (_request, reply) => {
     return reply.status(status).send(payload);
   } catch (error) {
     server.log.error(error);
+    return reply.status(502).send({ ok: false, error: "CONTENT_SERVICE_UNAVAILABLE" });
+  }
+});
+
+server.post("/api/seo-pages", async (request, reply) => {
+  const parsed = seoPageInputSchema.safeParse(request.body);
+
+  if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
+
+  try {
+    const { status, payload } = await forwardPost(`${env.CONTENT_SERVICE_URL}/seo-pages`, parsed.data);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    request.log.error(error);
     return reply.status(502).send({ ok: false, error: "CONTENT_SERVICE_UNAVAILABLE" });
   }
 });
@@ -233,7 +235,6 @@ server.get("/api/office/messages", async (_request, reply) => {
 
 server.get("/api/office/messages/by-contact-request/:contactRequestId", async (request, reply) => {
   const { contactRequestId } = request.params as { contactRequestId: string };
-
   try {
     const { status, payload } = await forwardGet(`${env.OFFICE_SERVICE_URL}/office/messages/by-contact-request/${contactRequestId}`);
     return reply.status(status).send(payload);
@@ -255,7 +256,6 @@ server.get("/api/office/audit", async (_request, reply) => {
 
 server.get("/api/office/audit/by-contact-request/:contactRequestId", async (request, reply) => {
   const { contactRequestId } = request.params as { contactRequestId: string };
-
   try {
     const { status, payload } = await forwardGet(`${env.OFFICE_SERVICE_URL}/office/audit/by-contact-request/${contactRequestId}`);
     return reply.status(status).send(payload);
@@ -268,9 +268,7 @@ server.get("/api/office/audit/by-contact-request/:contactRequestId", async (requ
 server.post("/api/office/messages", async (request, reply) => {
   const parsed = officeMessageSchema.safeParse(request.body);
 
-  if (!parsed.success) {
-    return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
-  }
+  if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
 
   try {
     const { status, payload } = await forwardPost(`${env.OFFICE_SERVICE_URL}/office/messages`, parsed.data);
