@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import { z } from "zod";
 import { loadServiceEnv } from "@investbourse/config";
 import { officeMessageInputSchema } from "@investbourse/validators";
+import { createClientMessage, listClientMessages, listClientMessagesByContactRequest, listClientMessagesForUser } from "./repositories/client-message.repository.js";
 import { createMissionDocument, listMissionDocuments, listMissionDocumentsByContactRequest, listMissionDocumentsForUser } from "./repositories/document.repository.js";
 import { createWorkItem, getWorkDashboard, listAuditItemsByContactRequest, listRecentAuditItems, listWorkItems, listWorkItemsByContactRequest } from "./repositories/work.repository.js";
 
@@ -27,11 +28,21 @@ const missionDocumentSchema = z.object({
   actorUserId: z.string().trim().optional().nullable(),
 });
 
+const clientMessageSchema = z.object({
+  subject: z.string().trim().min(2).max(220),
+  body: z.string().trim().min(2).max(5000),
+  senderType: z.enum(["CLIENT", "ADMIN", "SYSTEM"]).default("CLIENT"),
+  senderLabel: z.string().trim().min(2).max(160),
+  contactRequestId: z.string().trim().optional().nullable(),
+  userId: z.string().trim().optional().nullable(),
+  actorUserId: z.string().trim().optional().nullable(),
+});
+
 server.get("/health", async () => ({
   status: "ok",
   service: "office-service",
   persistence: "postgres-prisma",
-  modules: ["messages", "audit", "documents"],
+  modules: ["messages", "audit", "documents", "client-messages"],
   timestamp: new Date().toISOString(),
 }));
 
@@ -47,13 +58,57 @@ server.get("/office/messages", async (_request, reply) => {
 
 server.get("/office/messages/by-contact-request/:contactRequestId", async (request, reply) => {
   const { contactRequestId } = request.params as { contactRequestId: string };
-
   try {
     const data = await listWorkItemsByContactRequest(contactRequestId);
     return { ok: true, data };
   } catch (error) {
     request.log.error(error);
     return reply.status(500).send({ ok: false, error: "OFFICE_MESSAGES_BY_CONTACT_LIST_FAILED" });
+  }
+});
+
+server.get("/office/client-messages", async (_request, reply) => {
+  try {
+    const data = await listClientMessages();
+    return { ok: true, data };
+  } catch (error) {
+    server.log.error(error);
+    return reply.status(500).send({ ok: false, error: "CLIENT_MESSAGES_LIST_FAILED" });
+  }
+});
+
+server.get("/office/client-messages/by-user/:userId", async (request, reply) => {
+  const { userId } = request.params as { userId: string };
+  try {
+    const data = await listClientMessagesForUser(userId);
+    return { ok: true, data };
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(500).send({ ok: false, error: "CLIENT_MESSAGES_BY_USER_LIST_FAILED" });
+  }
+});
+
+server.get("/office/client-messages/by-contact-request/:contactRequestId", async (request, reply) => {
+  const { contactRequestId } = request.params as { contactRequestId: string };
+  try {
+    const data = await listClientMessagesByContactRequest(contactRequestId);
+    return { ok: true, data };
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(500).send({ ok: false, error: "CLIENT_MESSAGES_BY_CONTACT_LIST_FAILED" });
+  }
+});
+
+server.post("/office/client-messages", async (request, reply) => {
+  const parsed = clientMessageSchema.safeParse(request.body);
+  if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
+
+  try {
+    const data = await createClientMessage(parsed.data);
+    return reply.status(201).send({ ok: true, data });
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(500).send({ ok: false, error: "CLIENT_MESSAGE_CREATE_FAILED" });
   }
 });
 
@@ -69,7 +124,6 @@ server.get("/office/audit", async (_request, reply) => {
 
 server.get("/office/audit/by-contact-request/:contactRequestId", async (request, reply) => {
   const { contactRequestId } = request.params as { contactRequestId: string };
-
   try {
     const data = await listAuditItemsByContactRequest(contactRequestId);
     return { ok: true, data };
@@ -91,7 +145,6 @@ server.get("/office/documents", async (_request, reply) => {
 
 server.get("/office/documents/by-user/:userId", async (request, reply) => {
   const { userId } = request.params as { userId: string };
-
   try {
     const data = await listMissionDocumentsForUser(userId);
     return { ok: true, data };
@@ -103,7 +156,6 @@ server.get("/office/documents/by-user/:userId", async (request, reply) => {
 
 server.get("/office/documents/by-contact-request/:contactRequestId", async (request, reply) => {
   const { contactRequestId } = request.params as { contactRequestId: string };
-
   try {
     const data = await listMissionDocumentsByContactRequest(contactRequestId);
     return { ok: true, data };
@@ -115,10 +167,7 @@ server.get("/office/documents/by-contact-request/:contactRequestId", async (requ
 
 server.post("/office/documents", async (request, reply) => {
   const parsed = missionDocumentSchema.safeParse(request.body);
-
-  if (!parsed.success) {
-    return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
-  }
+  if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
 
   try {
     const data = await createMissionDocument(parsed.data);
@@ -131,10 +180,7 @@ server.post("/office/documents", async (request, reply) => {
 
 server.post("/office/messages", async (request, reply) => {
   const parsed = officeMessageInputSchema.safeParse(request.body);
-
-  if (!parsed.success) {
-    return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
-  }
+  if (!parsed.success) return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
 
   try {
     const data = await createWorkItem(parsed.data);
