@@ -2,7 +2,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { loadServiceEnv } from "@investbourse/config";
 import { contactRequestInputSchema } from "@investbourse/validators";
-import { createContactRequest, getContactRequestById, listContactRequests } from "./repositories/contact-request.repository.js";
+import { createContactRequest, getContactRequestById, listContactRequests, listContactRequestsByUser } from "./repositories/contact-request.repository.js";
 
 const env = loadServiceEnv({ ...process.env, PORT: process.env.PORT ?? "4010" });
 const server = Fastify({ logger: true });
@@ -16,6 +16,7 @@ server.get("/health", async () => ({
   status: "ok",
   service: "contact-service",
   persistence: "postgres-prisma",
+  modules: ["contact-requests", "user-linking"],
   timestamp: new Date().toISOString(),
 }));
 
@@ -26,6 +27,18 @@ server.get("/contact-requests", async (_request, reply) => {
   } catch (error) {
     server.log.error(error);
     return reply.status(500).send({ ok: false, error: "CONTACT_REQUEST_LIST_FAILED" });
+  }
+});
+
+server.get("/contact-requests/by-user/:userId", async (request, reply) => {
+  const { userId } = request.params as { userId: string };
+
+  try {
+    const data = await listContactRequestsByUser(userId);
+    return { ok: true, data };
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(500).send({ ok: false, error: "CONTACT_REQUEST_BY_USER_LIST_FAILED" });
   }
 });
 
