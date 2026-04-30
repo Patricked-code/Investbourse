@@ -1,0 +1,163 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: investbourse-postgres-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-investbourse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-investbourse}
+    volumes:
+      - investbourse_postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-investbourse} -d ${POSTGRES_DB:-investbourse}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - investbourse_internal
+
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: services/api-gateway
+    container_name: investbourse-api-gateway-prod
+    restart: unless-stopped
+    env_file:
+      - ../.env.production
+    environment:
+      PORT: 4000
+      CONTACT_SERVICE_URL: http://contact-service:4010
+      CONTENT_SERVICE_URL: http://content-service:4020
+      AUTH_SERVICE_URL: http://auth-service:4030
+      OFFICE_SERVICE_URL: http://office-service:4040
+    depends_on:
+      postgres:
+        condition: service_healthy
+      contact-service:
+        condition: service_started
+      content-service:
+        condition: service_started
+      auth-service:
+        condition: service_started
+      office-service:
+        condition: service_started
+    networks:
+      - investbourse_internal
+
+  contact-service:
+    build:
+      context: ..
+      dockerfile: docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: services/contact-service
+    container_name: investbourse-contact-service-prod
+    restart: unless-stopped
+    env_file:
+      - ../.env.production
+    environment:
+      PORT: 4010
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - investbourse_internal
+
+  content-service:
+    build:
+      context: ..
+      dockerfile: docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: services/content-service
+    container_name: investbourse-content-service-prod
+    restart: unless-stopped
+    env_file:
+      - ../.env.production
+    environment:
+      PORT: 4020
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - investbourse_internal
+
+  auth-service:
+    build:
+      context: ..
+      dockerfile: docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: services/auth-service
+    container_name: investbourse-auth-service-prod
+    restart: unless-stopped
+    env_file:
+      - ../.env.production
+    environment:
+      PORT: 4030
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - investbourse_internal
+
+  office-service:
+    build:
+      context: ..
+      dockerfile: docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: services/office-service
+    container_name: investbourse-office-service-prod
+    restart: unless-stopped
+    env_file:
+      - ../.env.production
+    environment:
+      PORT: 4040
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - investbourse_internal
+
+  web:
+    build:
+      context: ..
+      dockerfile: docker/web.Dockerfile
+    container_name: investbourse-web-prod
+    restart: unless-stopped
+    env_file:
+      - ../.env.production
+    environment:
+      PORT: 3000
+      NEXT_PUBLIC_API_BASE_URL: http://api-gateway:4000
+    depends_on:
+      api-gateway:
+        condition: service_started
+    networks:
+      - investbourse_internal
+      - investbourse_public
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: investbourse-nginx-prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/investbourse.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+    depends_on:
+      web:
+        condition: service_started
+    networks:
+      - investbourse_public
+
+volumes:
+  investbourse_postgres_prod_data:
+
+networks:
+  investbourse_internal:
+    internal: true
+  investbourse_public:
