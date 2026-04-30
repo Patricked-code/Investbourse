@@ -29,6 +29,22 @@ const officeMessageSchema = z.object({
 });
 
 const sessionValidationSchema = z.object({ token: z.string().min(10) });
+const userAdminUpdateSchema = z.object({
+  role: z.enum(["USER", "ADMIN", "SUPERADMIN"]).optional(),
+  status: z.enum(["PENDING_VERIFICATION", "ACTIVE", "DISABLED"]).optional(),
+  actorUserId: z.string().optional().nullable(),
+});
+
+async function forwardPatch<T>(url: string, body: unknown): Promise<{ status: number; payload: T }> {
+  const response = await fetch(url, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  const payload = (await response.json()) as T;
+  return { status: response.status, payload };
+}
 
 async function forwardPost<T>(url: string, body: unknown): Promise<{ status: number; payload: T }> {
   const response = await fetch(url, {
@@ -101,6 +117,45 @@ server.post("/api/auth/session", async (request, reply) => {
 
   try {
     const { status, payload } = await forwardPost(`${env.AUTH_SERVICE_URL}/auth/session`, parsed.data);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(502).send({ ok: false, error: "AUTH_SERVICE_UNAVAILABLE" });
+  }
+});
+
+server.get("/api/auth/users", async (_request, reply) => {
+  try {
+    const { status, payload } = await forwardGet(`${env.AUTH_SERVICE_URL}/auth/users`);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    server.log.error(error);
+    return reply.status(502).send({ ok: false, error: "AUTH_SERVICE_UNAVAILABLE" });
+  }
+});
+
+server.get("/api/auth/users/:id", async (request, reply) => {
+  const { id } = request.params as { id: string };
+
+  try {
+    const { status, payload } = await forwardGet(`${env.AUTH_SERVICE_URL}/auth/users/${id}`);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(502).send({ ok: false, error: "AUTH_SERVICE_UNAVAILABLE" });
+  }
+});
+
+server.patch("/api/auth/users/:id", async (request, reply) => {
+  const { id } = request.params as { id: string };
+  const parsed = userAdminUpdateSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
+  }
+
+  try {
+    const { status, payload } = await forwardPatch(`${env.AUTH_SERVICE_URL}/auth/users/${id}`, parsed.data);
     return reply.status(status).send(payload);
   } catch (error) {
     request.log.error(error);
