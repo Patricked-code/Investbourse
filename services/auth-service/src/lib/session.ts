@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { assertProductionSecret } from "@investbourse/config/security";
 
 const sessionTtlSeconds = 60 * 60 * 8;
 
@@ -13,9 +14,12 @@ type SessionPayload = {
 
 function getSecret() {
   const secret = process.env.AUTH_SECRET ?? process.env.JWT_SECRET;
-  if (!secret || secret === "change-me-in-production") {
+  assertProductionSecret("AUTH_SECRET_OR_JWT_SECRET", secret);
+
+  if (!secret) {
     return "investbourse-development-session-secret";
   }
+
   return secret;
 }
 
