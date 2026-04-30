@@ -1,0 +1,14 @@
+{
+  "name": "@investbourse/email",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@investbourse/config": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3"
+  }
+}
