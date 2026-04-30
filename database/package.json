@@ -6,8 +6,10 @@
   "scripts": {
     "db:generate": "prisma generate --schema prisma/schema.prisma",
     "db:migrate": "prisma migrate dev --schema prisma/schema.prisma",
+    "db:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
     "db:studio": "prisma studio --schema prisma/schema.prisma",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "db:seed-admin": "tsx prisma/seed-admin.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
