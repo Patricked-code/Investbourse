@@ -38,6 +38,8 @@ services:
         condition: service_started
       content-service:
         condition: service_started
+      auth-service:
+        condition: service_started
       office-service:
         condition: service_started
 
@@ -73,6 +75,24 @@ services:
       PORT: 4020
     ports:
       - "4020:4020"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  auth-service:
+    build:
+      context: ..
+      dockerfile: docker/node-service.Dockerfile
+      args:
+        SERVICE_PATH: services/auth-service
+    container_name: investbourse-auth-service
+    restart: unless-stopped
+    env_file:
+      - ../.env.example
+    environment:
+      PORT: 4030
+    ports:
+      - "4030:4030"
     depends_on:
       postgres:
         condition: service_healthy
