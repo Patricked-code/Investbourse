@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
+import { AuditTrailPanel } from "@/components/organisms/AuditTrailPanel";
 import { OfficeHistoryPanel } from "@/components/organisms/OfficeHistoryPanel";
 import { OfficeQualificationForm } from "@/components/molecules/OfficeQualificationForm";
 import { Badge } from "@/components/atoms/Badge";
@@ -80,7 +81,7 @@ export default async function AdminDemandDetailPage({ params }: PageProps) {
             <div>
               <Badge>Fiche demande</Badge>
               <h1 className="mt-5 text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">Détail de la demande institutionnelle</h1>
-              <h2 className="mt-4 text-xl font-semibold text-slate-700">Qualification, historique back-office et prochaine action</h2>
+              <h2 className="mt-4 text-xl font-semibold text-slate-700">Qualification, historique back-office, audit et prochaine action</h2>
             </div>
             <Link href="/admin" className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700">
               Retour cockpit
@@ -133,6 +134,7 @@ export default async function AdminDemandDetailPage({ params }: PageProps) {
                 </section>
 
                 <OfficeHistoryPanel contactRequestId={request.id} />
+                <AuditTrailPanel contactRequestId={request.id} />
               </div>
 
               <OfficeQualificationForm contactRequestId={request.id} />
