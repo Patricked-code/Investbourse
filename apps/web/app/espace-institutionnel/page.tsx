@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
+import { LogoutButton } from "@/components/molecules/LogoutButton";
 import { Badge } from "@/components/atoms/Badge";
 import { Icon } from "@/components/atoms/Icon";
+import { getCurrentSession } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "Espace institutionnel | Investbourse",
@@ -31,7 +35,13 @@ const documents = [
   "Cahier des charges consultation.docx",
 ];
 
-export default function InstitutionalAreaPage() {
+export default async function InstitutionalAreaPage() {
+  const session = await getCurrentSession();
+
+  if (!session) {
+    redirect("/auth/login?redirect=/espace-institutionnel");
+  }
+
   return (
     <>
       <Header />
@@ -42,8 +52,12 @@ export default function InstitutionalAreaPage() {
               <Badge>Espace utilisateur</Badge>
               <h1 className="mt-5 text-4xl font-semibold text-slate-950 md:text-6xl">Tableau de bord institutionnel</h1>
               <h2 className="mt-3 text-xl font-semibold text-slate-700">Suivi des demandes, missions, documents et livrables</h2>
+              <p className="mt-4 text-sm text-slate-500">Connecté : {session.user.fullName} · {session.user.email} · rôle {session.user.role}</p>
             </div>
-            <button className="rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white">Nouvelle demande</button>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/contact" className="rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white">Nouvelle demande</Link>
+              <LogoutButton />
+            </div>
           </div>
 
           <div className="mt-10 grid gap-5 md:grid-cols-4">
@@ -59,6 +73,7 @@ export default function InstitutionalAreaPage() {
           <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm" aria-labelledby="requests-title">
               <h3 id="requests-title" className="text-2xl font-semibold">Mes demandes</h3>
+              <p className="mt-3 leading-7 text-slate-600">Cette zone sera reliée aux demandes rattachées à l’utilisateur connecté. La phase actuelle sécurise déjà l’accès par session.</p>
               <div className="mt-5 grid gap-4">
                 {requests.map((request) => (
                   <article key={request.title} className="rounded-2xl bg-slate-50 p-5">
