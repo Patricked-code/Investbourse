@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
@@ -20,6 +21,12 @@ const adminStats = [
   ["API", "Gateway REST", "file"],
   ["DB", "PostgreSQL Prisma", "clipboard"],
   ["SEO", "Content service", "users"],
+];
+
+const adminLinks = [
+  { href: "/admin/utilisateurs", label: "Utilisateurs", text: "Comptes, statuts et niveaux d’accès", icon: "users" },
+  { href: "/admin/audit", label: "Audit global", text: "Traçabilité des connexions et actions", icon: "shield" },
+  { href: "/admin", label: "Demandes", text: "Messages institutionnels et qualification", icon: "mail" },
 ];
 
 export default async function AdminPage() {
@@ -61,6 +68,19 @@ export default async function AdminPage() {
             ))}
           </div>
 
+          <section className="mt-8 rounded-[2rem] border border-white/10 bg-white/5 p-6">
+            <h3 className="text-2xl font-semibold">Navigation administrateur</h3>
+            <div className="mt-5 grid gap-4 md:grid-cols-3">
+              {adminLinks.map((item) => (
+                <Link key={item.href} href={item.href} className="rounded-2xl bg-white p-5 text-slate-900 transition hover:-translate-y-1 hover:shadow-xl">
+                  <Icon name={item.icon} className="h-7 w-7 text-emerald-600" />
+                  <p className="mt-4 font-semibold">{item.label}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">{item.text}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+
           <ContactRequestsLivePanel />
           <AdminLivePanel />
 
@@ -72,7 +92,7 @@ export default async function AdminPage() {
                   "Lire les demandes contact persistées depuis PostgreSQL",
                   "Ouvrir une fiche demande détaillée",
                   "Créer un suivi back-office lié à la demande",
-                  "Assigner une demande à un administrateur",
+                  "Administrer les comptes et niveaux d’accès",
                   "Journaliser chaque action sensible",
                   "Exporter les données en CSV/XLSX",
                 ].map((item) => (
@@ -85,9 +105,9 @@ export default async function AdminPage() {
             </section>
 
             <aside className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
-              <h3 className="text-2xl font-semibold">Modules back-office prévus</h3>
+              <h3 className="text-2xl font-semibold">Modules back-office actifs</h3>
               <div className="mt-5 grid gap-3">
-                {["Gestion des messages", "Gestion des utilisateurs", "Qualification CRM", "Documents et livrables", "Paramètres SEO", "Journaux d’activité", "Export CSV/XLSX", "Notifications e-mail"].map((module) => (
+                {["Gestion des messages", "Gestion des utilisateurs", "Qualification CRM", "Audit global", "Documents et livrables", "Paramètres SEO", "Export CSV/XLSX", "Notifications e-mail"].map((module) => (
                   <div key={module} className="flex items-center gap-3 rounded-2xl bg-white/10 p-4">
                     <Icon name="check" className="h-5 w-5 text-emerald-300" />
                     <p className="text-sm font-medium text-slate-100">{module}</p>
