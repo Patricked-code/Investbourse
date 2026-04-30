@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { AdminLivePanel } from "@/components/organisms/AdminLivePanel";
+import { ContactRequestsLivePanel } from "@/components/organisms/ContactRequestsLivePanel";
 import { Badge } from "@/components/atoms/Badge";
 import { Icon } from "@/components/atoms/Icon";
 
@@ -12,43 +13,10 @@ export const metadata: Metadata = {
 };
 
 const adminStats = [
-  ["12", "Messages reçus", "mail"],
-  ["4", "Nouveaux", "file"],
-  ["6", "Dossiers qualifiés", "clipboard"],
-  ["2", "Rendez-vous à fixer", "users"],
-];
-
-const messages = [
-  {
-    id: "MSG-2026-001",
-    status: "Nouveau",
-    from: "Directeur financier",
-    org: "Caisse de retraite régionale",
-    email: "direction.finance@example.com",
-    need: "Appel d’offres",
-    date: "Aujourd’hui 09:42",
-    text: "Nous souhaitons structurer une consultation pour sélectionner une société de gestion obligataire UEMOA avec reporting trimestriel.",
-  },
-  {
-    id: "MSG-2026-002",
-    status: "À qualifier",
-    from: "Responsable trésorerie",
-    org: "Groupe industriel",
-    email: "tresorerie@example.com",
-    need: "Placement de trésorerie",
-    date: "Hier 17:18",
-    text: "Nous cherchons une grille comparative entre solutions monétaires et solutions obligataires court terme.",
-  },
-  {
-    id: "MSG-2026-003",
-    status: "Traité",
-    from: "Secrétaire général",
-    org: "Fondation institutionnelle",
-    email: "sg@example.com",
-    need: "Politique de placement",
-    date: "24 avril 2026",
-    text: "Nous souhaitons formaliser notre politique de placement et disposer d’une méthode de sélection documentée.",
-  },
+  ["Live", "Demandes persistées", "mail"],
+  ["API", "Gateway REST", "file"],
+  ["DB", "PostgreSQL Prisma", "clipboard"],
+  ["SEO", "Content service", "users"],
 ];
 
 export default function AdminPage() {
@@ -76,29 +44,25 @@ export default function AdminPage() {
             ))}
           </div>
 
+          <ContactRequestsLivePanel />
           <AdminLivePanel />
 
           <div className="mt-8 grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-            <section className="rounded-[2rem] border border-white/10 bg-white/5 p-6" aria-labelledby="admin-messages-title">
-              <h3 id="admin-messages-title" className="text-2xl font-semibold">Messages du site — maquette métier</h3>
+            <section className="rounded-[2rem] border border-white/10 bg-white/5 p-6" aria-labelledby="admin-roadmap-title">
+              <h3 id="admin-roadmap-title" className="text-2xl font-semibold">Roadmap cockpit connecté</h3>
               <div className="mt-5 grid gap-4">
-                {messages.map((message) => (
-                  <article key={message.id} className="rounded-2xl bg-white p-5 text-slate-900">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="font-semibold">{message.from} — {message.org}</p>
-                        <p className="text-sm text-slate-500">{message.email} · {message.date}</p>
-                      </div>
-                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">{message.status}</span>
-                    </div>
-                    <p className="mt-3 text-sm font-semibold text-slate-700">Besoin : {message.need}</p>
-                    <p className="mt-2 leading-7 text-slate-600">{message.text}</p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <button className="rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white">Qualifier</button>
-                      <button className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700">Assigner</button>
-                      <button className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700">Répondre</button>
-                    </div>
-                  </article>
+                {[
+                  "Lire les demandes contact persistées depuis PostgreSQL",
+                  "Ouvrir une fiche demande détaillée",
+                  "Créer un suivi back-office lié à la demande",
+                  "Assigner une demande à un administrateur",
+                  "Journaliser chaque action sensible",
+                  "Exporter les données en CSV/XLSX",
+                ].map((item) => (
+                  <div key={item} className="flex items-center gap-3 rounded-2xl bg-white/10 p-4">
+                    <Icon name="check" className="h-5 w-5 text-emerald-300" />
+                    <p className="text-sm font-medium text-slate-100">{item}</p>
+                  </div>
                 ))}
               </div>
             </section>
