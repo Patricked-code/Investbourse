@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { z } from "zod";
 import { loadServiceEnv } from "@investbourse/config";
+import { userLoginInputSchema, userRegistrationInputSchema } from "@investbourse/validators";
 
 const env = loadServiceEnv();
 const server = Fastify({ logger: true });
@@ -26,6 +27,8 @@ const officeMessageSchema = z.object({
   assignedTo: z.string().optional().nullable(),
   note: z.string().optional().nullable(),
 });
+
+const sessionValidationSchema = z.object({ token: z.string().min(10) });
 
 async function forwardPost<T>(url: string, body: unknown): Promise<{ status: number; payload: T }> {
   const response = await fetch(url, {
@@ -56,6 +59,54 @@ server.get("/health", async () => ({
   },
   timestamp: new Date().toISOString(),
 }));
+
+server.post("/api/auth/register", async (request, reply) => {
+  const parsed = userRegistrationInputSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
+  }
+
+  try {
+    const { status, payload } = await forwardPost(`${env.AUTH_SERVICE_URL}/auth/register`, parsed.data);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(502).send({ ok: false, error: "AUTH_SERVICE_UNAVAILABLE" });
+  }
+});
+
+server.post("/api/auth/login", async (request, reply) => {
+  const parsed = userLoginInputSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
+  }
+
+  try {
+    const { status, payload } = await forwardPost(`${env.AUTH_SERVICE_URL}/auth/login`, parsed.data);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(502).send({ ok: false, error: "AUTH_SERVICE_UNAVAILABLE" });
+  }
+});
+
+server.post("/api/auth/session", async (request, reply) => {
+  const parsed = sessionValidationSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
+  }
+
+  try {
+    const { status, payload } = await forwardPost(`${env.AUTH_SERVICE_URL}/auth/session`, parsed.data);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(502).send({ ok: false, error: "AUTH_SERVICE_UNAVAILABLE" });
+  }
+});
 
 server.get("/api/contact-requests", async (_request, reply) => {
   try {
