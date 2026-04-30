@@ -54,6 +54,18 @@ enum DocumentVisibility {
   CLIENT_VISIBLE
 }
 
+enum ClientMessageSenderType {
+  CLIENT
+  ADMIN
+  SYSTEM
+}
+
+enum ClientMessageStatus {
+  SENT
+  READ
+  ARCHIVED
+}
+
 model User {
   id           String     @id @default(cuid())
   fullName     String
@@ -65,10 +77,13 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  assignedContactRequests ContactRequest[]  @relation("AssignedContactRequests")
-  assignedOfficeMessages  OfficeMessage[]   @relation("AssignedOfficeMessages")
-  documents               MissionDocument[] @relation("UserMissionDocuments")
+  assignedContactRequests ContactRequest[]    @relation("AssignedContactRequests")
+  contactRequests         ContactRequest[]    @relation("UserContactRequests")
+  assignedOfficeMessages  OfficeMessage[]     @relation("AssignedOfficeMessages")
+  documents               MissionDocument[]   @relation("UserMissionDocuments")
+  clientMessages          ClientMessage[]     @relation("UserClientMessages")
   auditLogs               AuditLog[]
+  passwordResetTokens     PasswordResetToken[]
 }
 
 model ContactRequest {
@@ -79,11 +94,14 @@ model ContactRequest {
   requestType      String
   message          String
   status           ContactRequestStatus @default(NEW)
+  userId           String?
+  user             User?                @relation("UserContactRequests", fields: [userId], references: [id], onDelete: SetNull)
   assignedToUserId String?
   assignedTo       User?                @relation("AssignedContactRequests", fields: [assignedToUserId], references: [id])
   adminNotes       AdminNote[]
   officeMessages   OfficeMessage[]
   documents        MissionDocument[]
+  clientMessages   ClientMessage[]
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
 }
@@ -117,6 +135,31 @@ model MissionDocument {
   uploadedByLabel  String?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
+}
+
+model ClientMessage {
+  id               String                  @id @default(cuid())
+  contactRequestId String?
+  contactRequest   ContactRequest?         @relation(fields: [contactRequestId], references: [id], onDelete: SetNull)
+  userId           String?
+  user             User?                   @relation("UserClientMessages", fields: [userId], references: [id], onDelete: SetNull)
+  senderType       ClientMessageSenderType @default(CLIENT)
+  senderLabel      String
+  subject          String
+  body             String
+  status           ClientMessageStatus     @default(SENT)
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
 }
 
 model SeoPage {
