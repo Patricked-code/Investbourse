@@ -57,6 +57,28 @@ server.get("/health", async () => ({
   timestamp: new Date().toISOString(),
 }));
 
+server.get("/api/contact-requests", async (_request, reply) => {
+  try {
+    const { status, payload } = await forwardGet(`${env.CONTACT_SERVICE_URL}/contact-requests`);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    server.log.error(error);
+    return reply.status(502).send({ ok: false, error: "CONTACT_SERVICE_UNAVAILABLE" });
+  }
+});
+
+server.get("/api/contact-requests/:id", async (request, reply) => {
+  const { id } = request.params as { id: string };
+
+  try {
+    const { status, payload } = await forwardGet(`${env.CONTACT_SERVICE_URL}/contact-requests/${id}`);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(502).send({ ok: false, error: "CONTACT_SERVICE_UNAVAILABLE" });
+  }
+});
+
 server.post("/api/contact-requests", async (request, reply) => {
   const parsed = contactRequestSchema.safeParse(request.body);
 
