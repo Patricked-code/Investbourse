@@ -12,7 +12,7 @@ import { canAccessAdmin, getCurrentSession } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "Cockpit administrateur | Investbourse",
-  description: "Cockpit administrateur Investbourse pour suivre les messages, demandes institutionnelles, utilisateurs, contenus SEO et journaux d’activité.",
+  description: "Cockpit administrateur Investbourse pour suivre les messages, demandes institutionnelles, utilisateurs, contenus SEO, exports et journaux d’activité.",
   robots: { index: false, follow: false },
 };
 
@@ -26,6 +26,8 @@ const adminStats = [
 const adminLinks = [
   { href: "/admin/utilisateurs", label: "Utilisateurs", text: "Comptes, statuts et niveaux d’accès", icon: "users" },
   { href: "/admin/audit", label: "Audit global", text: "Traçabilité des connexions et actions", icon: "shield" },
+  { href: "/admin/exports", label: "Exports", text: "Demandes et audit au format CSV", icon: "file" },
+  { href: "/admin/contenu-seo", label: "Contenu SEO", text: "Slugs, metadata, H1 à H5 et schema.org", icon: "clipboard" },
   { href: "/admin", label: "Demandes", text: "Messages institutionnels et qualification", icon: "mail" },
 ];
 
@@ -49,11 +51,11 @@ export default async function AdminPage() {
             <div>
               <Badge>Cockpit administrateur</Badge>
               <h1 className="mt-5 text-4xl font-semibold md:text-6xl">Administration des messages et demandes entrantes</h1>
-              <h2 className="mt-4 text-xl font-semibold text-emerald-100">Réception, qualification, suivi commercial, SEO et conformité</h2>
+              <h2 className="mt-4 text-xl font-semibold text-emerald-100">Réception, qualification, suivi commercial, SEO, exports et conformité</h2>
               <p className="mt-4 text-sm text-slate-300">Connecté : {session.user.fullName} · {session.user.email} · rôle {session.user.role}</p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <button className="rounded-full bg-emerald-400 px-6 py-3 text-sm font-semibold text-slate-950">Exporter les messages</button>
+              <Link href="/admin/exports" className="rounded-full bg-emerald-400 px-6 py-3 text-sm font-semibold text-slate-950">Exports CSV</Link>
               <LogoutButton />
             </div>
           </div>
@@ -70,7 +72,7 @@ export default async function AdminPage() {
 
           <section className="mt-8 rounded-[2rem] border border-white/10 bg-white/5 p-6">
             <h3 className="text-2xl font-semibold">Navigation administrateur</h3>
-            <div className="mt-5 grid gap-4 md:grid-cols-3">
+            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
               {adminLinks.map((item) => (
                 <Link key={item.href} href={item.href} className="rounded-2xl bg-white p-5 text-slate-900 transition hover:-translate-y-1 hover:shadow-xl">
                   <Icon name={item.icon} className="h-7 w-7 text-emerald-600" />
@@ -93,8 +95,8 @@ export default async function AdminPage() {
                   "Ouvrir une fiche demande détaillée",
                   "Créer un suivi back-office lié à la demande",
                   "Administrer les comptes et niveaux d’accès",
-                  "Journaliser chaque action sensible",
-                  "Exporter les données en CSV/XLSX",
+                  "Éditer les contenus SEO depuis le cockpit",
+                  "Exporter les données en CSV",
                 ].map((item) => (
                   <div key={item} className="flex items-center gap-3 rounded-2xl bg-white/10 p-4">
                     <Icon name="check" className="h-5 w-5 text-emerald-300" />
@@ -107,7 +109,7 @@ export default async function AdminPage() {
             <aside className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
               <h3 className="text-2xl font-semibold">Modules back-office actifs</h3>
               <div className="mt-5 grid gap-3">
-                {["Gestion des messages", "Gestion des utilisateurs", "Qualification CRM", "Audit global", "Documents et livrables", "Paramètres SEO", "Export CSV/XLSX", "Notifications e-mail"].map((module) => (
+                {["Gestion des messages", "Gestion des utilisateurs", "Qualification CRM", "Audit global", "Contenu SEO", "Exports CSV", "Documents et livrables", "Notifications e-mail"].map((module) => (
                   <div key={module} className="flex items-center gap-3 rounded-2xl bg-white/10 p-4">
                     <Icon name="check" className="h-5 w-5 text-emerald-300" />
                     <p className="text-sm font-medium text-slate-100">{module}</p>
