@@ -20,6 +20,14 @@ export async function listWorkItems() {
   });
 }
 
+export async function listWorkItemsByContactRequest(contactRequestId: string) {
+  return prisma.officeMessage.findMany({
+    where: { contactRequestId },
+    orderBy: { updatedAt: "desc" },
+    include: { contactRequest: true },
+  });
+}
+
 export async function createWorkItem(input: OfficeMessageInput) {
   return prisma.officeMessage.create({
     data: {
