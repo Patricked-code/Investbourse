@@ -47,7 +47,7 @@ export function SeoPageEditorForm({ initialData }: SeoPageEditorFormProps) {
     setErrorMessage(null);
 
     try {
-      const response = await fetch("/api/admin/seo-pages", {
+      const response = await fetch("/api/admin/seo-pages/save", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
