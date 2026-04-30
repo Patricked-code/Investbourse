@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Header } from "@/components/organisms/Header";
 import { Footer } from "@/components/organisms/Footer";
 import { AuditTrailPanel } from "@/components/organisms/AuditTrailPanel";
@@ -7,6 +8,7 @@ import { OfficeHistoryPanel } from "@/components/organisms/OfficeHistoryPanel";
 import { OfficeQualificationForm } from "@/components/molecules/OfficeQualificationForm";
 import { Badge } from "@/components/atoms/Badge";
 import { Icon } from "@/components/atoms/Icon";
+import { canAccessAdmin, getCurrentSession } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "Détail demande institutionnelle | Investbourse",
@@ -68,6 +70,16 @@ function statusLabel(status: string) {
 }
 
 export default async function AdminDemandDetailPage({ params }: PageProps) {
+  const session = await getCurrentSession();
+
+  if (!session) {
+    redirect("/auth/login?redirect=/admin");
+  }
+
+  if (!canAccessAdmin(session.user.role)) {
+    redirect("/espace-institutionnel");
+  }
+
   const { id } = await params;
   const payload = await getContactRequest(id);
   const request = payload?.data;
@@ -82,6 +94,7 @@ export default async function AdminDemandDetailPage({ params }: PageProps) {
               <Badge>Fiche demande</Badge>
               <h1 className="mt-5 text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">Détail de la demande institutionnelle</h1>
               <h2 className="mt-4 text-xl font-semibold text-slate-700">Qualification, historique back-office, audit et prochaine action</h2>
+              <p className="mt-3 text-sm text-slate-500">Connecté : {session.user.fullName} · {session.user.role}</p>
             </div>
             <Link href="/admin" className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700">
               Retour cockpit
