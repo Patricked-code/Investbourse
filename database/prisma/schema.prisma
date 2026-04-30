@@ -39,6 +39,21 @@ enum OfficePriority {
   HIGH
 }
 
+enum DocumentCategory {
+  NOTE_CADRAGE
+  RAPPORT_ANALYSE
+  GRILLE_SCORING
+  CAHIER_CHARGES
+  CONTRAT
+  LIVRABLE
+  AUTRE
+}
+
+enum DocumentVisibility {
+  INTERNAL_ONLY
+  CLIENT_VISIBLE
+}
+
 model User {
   id           String     @id @default(cuid())
   fullName     String
@@ -50,8 +65,9 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  assignedContactRequests ContactRequest[] @relation("AssignedContactRequests")
-  assignedOfficeMessages  OfficeMessage[]  @relation("AssignedOfficeMessages")
+  assignedContactRequests ContactRequest[]  @relation("AssignedContactRequests")
+  assignedOfficeMessages  OfficeMessage[]   @relation("AssignedOfficeMessages")
+  documents               MissionDocument[] @relation("UserMissionDocuments")
   auditLogs               AuditLog[]
 }
 
@@ -67,6 +83,7 @@ model ContactRequest {
   assignedTo       User?                @relation("AssignedContactRequests", fields: [assignedToUserId], references: [id])
   adminNotes       AdminNote[]
   officeMessages   OfficeMessage[]
+  documents        MissionDocument[]
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
 }
@@ -83,6 +100,23 @@ model OfficeMessage {
   note             String?
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
+}
+
+model MissionDocument {
+  id               String             @id @default(cuid())
+  title            String
+  description      String?
+  fileName         String
+  fileUrl          String
+  category         DocumentCategory   @default(AUTRE)
+  visibility       DocumentVisibility @default(INTERNAL_ONLY)
+  contactRequestId String?
+  contactRequest   ContactRequest?    @relation(fields: [contactRequestId], references: [id], onDelete: SetNull)
+  userId           String?
+  user             User?              @relation("UserMissionDocuments", fields: [userId], references: [id], onDelete: SetNull)
+  uploadedByLabel  String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 }
 
 model SeoPage {
