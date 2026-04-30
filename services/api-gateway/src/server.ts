@@ -137,6 +137,28 @@ server.get("/api/office/messages/by-contact-request/:contactRequestId", async (r
   }
 });
 
+server.get("/api/office/audit", async (_request, reply) => {
+  try {
+    const { status, payload } = await forwardGet(`${env.OFFICE_SERVICE_URL}/office/audit`);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    server.log.error(error);
+    return reply.status(502).send({ ok: false, error: "OFFICE_SERVICE_UNAVAILABLE" });
+  }
+});
+
+server.get("/api/office/audit/by-contact-request/:contactRequestId", async (request, reply) => {
+  const { contactRequestId } = request.params as { contactRequestId: string };
+
+  try {
+    const { status, payload } = await forwardGet(`${env.OFFICE_SERVICE_URL}/office/audit/by-contact-request/${contactRequestId}`);
+    return reply.status(status).send(payload);
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(502).send({ ok: false, error: "OFFICE_SERVICE_UNAVAILABLE" });
+  }
+});
+
 server.post("/api/office/messages", async (request, reply) => {
   const parsed = officeMessageSchema.safeParse(request.body);
 
