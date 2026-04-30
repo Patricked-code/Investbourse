@@ -2,7 +2,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { loadServiceEnv } from "@investbourse/config";
 import { officeMessageInputSchema } from "@investbourse/validators";
-import { createWorkItem, getWorkDashboard, listWorkItems, listWorkItemsByContactRequest } from "./repositories/work.repository.js";
+import { createWorkItem, getWorkDashboard, listAuditItemsByContactRequest, listRecentAuditItems, listWorkItems, listWorkItemsByContactRequest } from "./repositories/work.repository.js";
 
 const env = loadServiceEnv({ ...process.env, PORT: process.env.PORT ?? "4040" });
 const server = Fastify({ logger: true });
@@ -38,6 +38,28 @@ server.get("/office/messages/by-contact-request/:contactRequestId", async (reque
   } catch (error) {
     request.log.error(error);
     return reply.status(500).send({ ok: false, error: "OFFICE_MESSAGES_BY_CONTACT_LIST_FAILED" });
+  }
+});
+
+server.get("/office/audit", async (_request, reply) => {
+  try {
+    const data = await listRecentAuditItems();
+    return { ok: true, data };
+  } catch (error) {
+    server.log.error(error);
+    return reply.status(500).send({ ok: false, error: "OFFICE_AUDIT_LIST_FAILED" });
+  }
+});
+
+server.get("/office/audit/by-contact-request/:contactRequestId", async (request, reply) => {
+  const { contactRequestId } = request.params as { contactRequestId: string };
+
+  try {
+    const data = await listAuditItemsByContactRequest(contactRequestId);
+    return { ok: true, data };
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(500).send({ ok: false, error: "OFFICE_AUDIT_BY_CONTACT_LIST_FAILED" });
   }
 });
 
