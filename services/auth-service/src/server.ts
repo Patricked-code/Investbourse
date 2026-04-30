@@ -1,8 +1,10 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import { z } from "zod";
 import { loadServiceEnv } from "@investbourse/config";
 import { userLoginInputSchema, userRegistrationInputSchema } from "@investbourse/validators";
 import { authenticateIdentity, getIdentityById, registerIdentity } from "./repositories/identity.repository.js";
+import { getUserForAdministration, listUsersForAdministration, updateUserRoleAndStatus } from "./repositories/user-admin.repository.js";
 import { createSessionToken, verifySessionToken } from "./lib/session.js";
 
 const env = loadServiceEnv({ ...process.env, PORT: process.env.PORT ?? "4030" });
@@ -11,6 +13,12 @@ const server = Fastify({ logger: true });
 await server.register(cors, {
   origin: env.CORS_ORIGIN.split(","),
   credentials: true,
+});
+
+const userAdminUpdateSchema = z.object({
+  role: z.enum(["USER", "ADMIN", "SUPERADMIN"]).optional(),
+  status: z.enum(["PENDING_VERIFICATION", "ACTIVE", "DISABLED"]).optional(),
+  actorUserId: z.string().optional().nullable(),
 });
 
 server.get("/health", async () => ({
@@ -78,6 +86,50 @@ server.post("/auth/session", async (request, reply) => {
   }
 
   return { ok: true, data: { user, session: payload } };
+});
+
+server.get("/auth/users", async (_request, reply) => {
+  try {
+    const data = await listUsersForAdministration();
+    return { ok: true, data };
+  } catch (error) {
+    server.log.error(error);
+    return reply.status(500).send({ ok: false, error: "USERS_LIST_FAILED" });
+  }
+});
+
+server.get("/auth/users/:id", async (request, reply) => {
+  const { id } = request.params as { id: string };
+
+  try {
+    const data = await getUserForAdministration(id);
+
+    if (!data) {
+      return reply.status(404).send({ ok: false, error: "USER_NOT_FOUND" });
+    }
+
+    return { ok: true, data };
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(500).send({ ok: false, error: "USER_READ_FAILED" });
+  }
+});
+
+server.patch("/auth/users/:id", async (request, reply) => {
+  const { id } = request.params as { id: string };
+  const parsed = userAdminUpdateSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    return reply.status(400).send({ ok: false, error: "VALIDATION_ERROR", details: parsed.error.flatten() });
+  }
+
+  try {
+    const data = await updateUserRoleAndStatus({ id, ...parsed.data });
+    return { ok: true, data };
+  } catch (error) {
+    request.log.error(error);
+    return reply.status(500).send({ ok: false, error: "USER_UPDATE_FAILED" });
+  }
 });
 
 try {
